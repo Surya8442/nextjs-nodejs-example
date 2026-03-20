@@ -2,70 +2,43 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "your-dockerhub-username/myapp"
-        DOCKER_TAG = "latest"
-        KUBE_CONFIG = credentials('kubeconfig')   // Jenkins credentials
+        DOCKER_USER = "surya8442"
+        IMAGE_NAME = "take_it"
+        IMAGE_TAG = "0.1"
     }
 
     stages {
 
-        stage('Clone Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo/app.git'
+                git branch: 'main', url: 'https://github.com/Surya8442/pipelines-javascript-docker.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image') {
             steps {
-                script {
-                    sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG ."
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Docker_cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh '''
+                    echo "$PASS" | docker login -u "$USER" --password-stdin
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                    '''
                 }
             }
         }
 
-        stage('Login to DockerHub') {
+        stage('Run Container') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                }
+                sh 'docker rm -f take_it || true'
+                sh 'docker run -d -p 5250:8080 --name take_it ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}'
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                sh "docker push $DOCKER_IMAGE:$DOCKER_TAG"
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh """
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
-                    """
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh "kubectl get pods"
-                sh "kubectl get svc"
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Deployment Successful 🚀"
-        }
-        failure {
-            echo "Deployment Failed ❌"
-        }
     }
 }
