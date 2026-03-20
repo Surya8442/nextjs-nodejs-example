@@ -8,7 +8,7 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: tes
+      app: application
   template:
     metadata:
       labels:
