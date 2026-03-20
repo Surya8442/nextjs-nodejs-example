@@ -1,27 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
+  name: suryadeployimage
   labels:
-    app: next-webapp
-  name: next-webapp
+    app: application
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
-      app: next-webapp
-  strategy: {}
+      app: tes
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: next-webapp
+        app: application
     spec:
       containers:
-      - image: docker.io/bbachin1/next-node-webapp
-        name: webapp
-        imagePullPolicy: Always
-        resources: {}
-        ports:
-          - containerPort: 3080 
-status: {}
+        - name: newcont
+          image: surya8442/take_i:0.1
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myservice
+spec:
+  selector:
+    app: application
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30133
+  type: NodePort
