@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_USER = "surya8442"
-        IMAGE_NAME = "take_it"
+        IMAGE_NAME = "Application"
         IMAGE_TAG = "0.1"
     }
 
@@ -11,7 +11,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Surya8442/pipelines-javascript-docker.git'
+                git branch: 'main', url: 'https://github.com/Surya8442/nextjs-nodejs-example.git'
             }
         }
 
@@ -35,7 +35,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker rm -f take_it || true'
+                sh 'docker rm -f application || true'
                 sh 'docker run -d -p 5250:8080 --name take_it ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}'
             }
         }
