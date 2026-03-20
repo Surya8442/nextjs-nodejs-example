@@ -1,21 +1,50 @@
 pipeline {
     agent any
 
+    triggers {
+        githubPush()
+    }
+
     environment {
         DOCKER_USER = "surya8442"
-        IMAGE_NAME = "Application"
-        IMAGE_TAG = "0.1"
+        IMAGE_NAME = "busbok"
+        IMAGE_TAG = "latest"
+        CONTAINER_NAME = "bus_cont"
     }
 
     stages {
 
-        stage('Build Image') {
+        stage('Checkout Code') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+                git branch: 'master', url: 'https://github.com/Surya8442/nextjs-nodejs-example.git'
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                sh '''
+                docker rm -f ${CONTAINER_NAME} || true
+                '''
+            }
+        }
+
+        stage('Run New Container') {
+            steps {
+                sh '''
+                docker run -d -p 1339:8080 --name ${CONTAINER_NAME} ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Push Image to DockerHub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker_cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
@@ -24,13 +53,6 @@ pipeline {
                     docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
                     '''
                 }
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                sh 'docker rm -f application || true'
-                sh 'docker run -d -p 5250:8080 --name take_it ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}'
             }
         }
 
